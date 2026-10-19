@@ -46,10 +46,11 @@ flowchart TD
 
 | Tool Name | Parameters | Description |
 | :--- | :--- | :--- |
-| `search_k8s_docs` | `query: str`, `limit: int = 3` | Performs high-speed BM25 search over official Kubernetes documentation. Returns authoritative excerpts and official `https://kubernetes.io/docs/...` URLs. |
-| `get_canonical_manifest` | `kind: str` | Retrieves verified, unaltered Kubernetes YAML manifests directly from official examples for any resource Kind (`NetworkPolicy`, `ValidatingAdmissionPolicy`, `Deployment`, `ValidatingWebhookConfiguration`, etc.). |
+| `search_k8s_docs` | `query: str`, `limit: int = 3` | Performs high-speed BM25 search over official Kubernetes documentation via SQLite FTS5. Returns authoritative excerpts and official `https://kubernetes.io/docs/...` URLs. |
+| `get_canonical_manifest` | `kind: str` | Retrieves verified, unaltered Kubernetes YAML manifests directly from official examples for any resource Kind (`NetworkPolicy`, `ValidatingAdmissionPolicy`, `Deployment`, `ValidatingWebhookConfiguration`, etc.). Inlines Hugo `{{< codenew >}}` files automatically. |
+| `check_api_version` | `kind: str`, `api_version: Optional[str]` | Deterministically verifies API version validity, deprecation status, and removal history using the official Kubernetes OpenAPI registry. |
 | `list_supported_resources` | *None* | Lists all Kubernetes API resource Kinds currently indexed with canonical YAML manifests. |
-| `sync_upstream_docs` | *None* | Fetches or updates documentation and examples from `github.com/kubernetes/website` and rebuilds the local index. |
+| `sync_upstream_docs` | *None* | Fetches or updates documentation and examples from `github.com/kubernetes/website` and rebuilds the local SQLite FTS5 index. |
 
 ---
 

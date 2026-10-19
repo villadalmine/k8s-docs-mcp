@@ -3,6 +3,7 @@ import yaml
 from pathlib import Path
 from typing import List, Tuple, Dict, Any, Optional
 from k8s_docs_mcp.models import K8sDocSection, K8sManifest
+from k8s_docs_mcp.hugo_preprocessor import HugoPreprocessor
 
 FRONTMATTER_REGEX = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
 YAML_BLOCK_REGEX = re.compile(r"```(?:yaml|yml)\s*\n(.*?)```", re.DOTALL)
@@ -49,7 +50,7 @@ class K8sDocParser:
         path_str = path_str.strip("/")
         return f"https://kubernetes.io/docs/{path_str}/" if path_str else "https://kubernetes.io/docs/"
 
-    def parse_markdown_file(self, file_path: Path, base_docs_dir: Path) -> Tuple[List[K8sDocSection], List[K8sManifest]]:
+    def parse_markdown_file(self, file_path: Path, base_docs_dir: Path, examples_dir: Optional[Path] = None) -> Tuple[List[K8sDocSection], List[K8sManifest]]:
         """Parses a single markdown document into atomic sections and manifest snippets."""
         sections: List[K8sDocSection] = []
         manifests: List[K8sManifest] = []
@@ -62,6 +63,10 @@ class K8sDocParser:
         metadata, body = self.extract_frontmatter(content)
         title = metadata.get("title") or file_path.stem.replace("-", " ").title()
         description = metadata.get("description") or ""
+
+        # Preprocess Hugo shortcodes (resolves {{< codenew file="..." >}} into actual YAML)
+        preprocessor = HugoPreprocessor(examples_dir=examples_dir, docs_dir=base_docs_dir)
+        body = preprocessor.preprocess(body)
 
         try:
             rel_path = file_path.relative_to(base_docs_dir)

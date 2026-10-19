@@ -68,7 +68,7 @@ class K8sDocIndexer:
         console.print(f"[cyan]Parsing Markdown documentation from {docs_dir}...[/cyan]")
         md_files = list(docs_dir.glob("**/*.md"))
         for md_path in md_files:
-            file_sections, file_manifests = parser.parse_markdown_file(md_path, docs_dir)
+            file_sections, file_manifests = parser.parse_markdown_file(md_path, docs_dir, examples_dir=examples_dir)
             sections.extend(file_sections)
             manifests.extend(file_manifests)
 
