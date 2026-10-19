@@ -1,0 +1,40 @@
+name: Sync Upstream Kubernetes Documentation
+
+on:
+  schedule:
+    # Run every Sunday at midnight UTC
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync-and-index:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        run: uv python install 3.11
+
+      - name: Install Dependencies
+        run: uv sync
+
+      - name: Sync kubernetes/website and Rebuild Index
+        run: |
+          uv run python -c "from k8s_docs_mcp.server import sync_upstream_docs; print(sync_upstream_docs())"
+
+      - name: Commit and Push Updated Cache
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/
+          git diff --quiet && git diff --staged --quiet || git commit -m "chore(sync): update upstream kubernetes.io documentation index"
+          git push
