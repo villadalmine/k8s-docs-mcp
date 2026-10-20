@@ -134,7 +134,7 @@ class K8sSqliteStore:
                 results.append((sec, score))
             return results
 
-    def get_manifests_by_kind(self, kind: str, limit: int = 2) -> List[K8sManifest]:
+    def get_manifests_by_kind(self, kind: str, limit: int = 3) -> List[K8sManifest]:
         """Returns verified manifests matching a resource Kind."""
         with self._get_connection() as conn:
             cursor = conn.cursor()

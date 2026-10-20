@@ -79,6 +79,38 @@ Core RBAC API objects:
 """,
             tags=["security", "rbac", "authorization"],
         ),
+        K8sDocSection(
+            title="Pods and Pod Lifecycle",
+            url="https://kubernetes.io/docs/concepts/workloads/pods/",
+            source_file="content/en/docs/concepts/workloads/pods.md",
+            section_name="Pod Overview and Container Sharing",
+            content="""Pods are the smallest deployable units of computing that you can create and manage in Kubernetes.
+A Pod is a group of one or more containers, with shared storage and network resources, and a specification for how to run the containers.
+Key Pod concepts:
+1. Shared Networking: All containers in a Pod share the same network namespace, including IP address and network ports (they communicate via localhost).
+2. Shared Storage: Pods can specify a set of shared storage Volumes accessible to all containers in the Pod.
+3. Pod Lifecycle: A Pod transitions through phases: Pending -> Running -> Succeeded / Failed. If a container crashes, the kubelet restarts it according to restartPolicy (Always, OnFailure, Never).
+4. Multi-container patterns: Sidecar (augmenting primary app, e.g. envoy or logging agent), Init Containers (run before app containers start), and Ambassador (proxying connections).
+Pods are ephemeral by design and are typically managed by controllers like Deployments, StatefulSets, or DaemonSets rather than created directly in production.
+""",
+            tags=["workloads", "pods", "containers", "lifecycle"],
+        ),
+        K8sDocSection(
+            title="Services and Networking",
+            url="https://kubernetes.io/docs/concepts/services-networking/service/",
+            source_file="content/en/docs/concepts/services-networking/service.md",
+            section_name="Service Overview and Service Types",
+            content="""An abstract way to expose an application running on a set of Pods as a network service.
+With Kubernetes you don't need to modify your application to use an unfamiliar service discovery mechanism.
+Kubernetes gives Pods their own IP addresses and a single DNS name for a set of Pods, and can load-balance across them.
+Service Types:
+- ClusterIP: Exposes the Service on an internal IP in the cluster (default). Accessible only within the cluster.
+- NodePort: Exposes the Service on each Node's IP at a static port (30000-32767).
+- LoadBalancer: Exposes the Service externally using an external cloud provider load balancer.
+- ExternalName: Maps the Service to the contents of the externalName field (e.g. foo.bar.example.com).
+""",
+            tags=["networking", "services", "service-discovery"],
+        ),
     ]
 
 
@@ -214,5 +246,136 @@ spec:
         - containerPort: 80
 """,
             description="Canonical NGINX Deployment manifest with 3 replicas.",
+        ),
+        K8sManifest(
+            kind="Pod",
+            api_version="v1",
+            name="nginx-pod-single",
+            source_file="content/en/examples/pods/simple-pod.yaml",
+            url="https://kubernetes.io/docs/concepts/workloads/pods/#pod-templates",
+            content="""apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-pod
+  labels:
+    app: web
+    tier: frontend
+spec:
+  containers:
+  - name: nginx
+    image: nginx:1.25.4-alpine
+    ports:
+    - containerPort: 80
+      name: http
+    resources:
+      requests:
+        memory: "64Mi"
+        cpu: "100m"
+      limits:
+        memory: "128Mi"
+        cpu: "250m"
+    livenessProbe:
+      httpGet:
+        path: /
+        port: 80
+      initialDelaySeconds: 5
+      periodSeconds: 10
+    readinessProbe:
+      httpGet:
+        path: /
+        port: 80
+      initialDelaySeconds: 3
+      periodSeconds: 5
+""",
+            description="Canonical single-container Pod manifest with health probes and resource limits.",
+        ),
+        K8sManifest(
+            kind="Pod",
+            api_version="v1",
+            name="multi-container-sidecar-pod",
+            source_file="content/en/examples/pods/two-container-pod.yaml",
+            url="https://kubernetes.io/docs/concepts/workloads/pods/#multi-container-pods",
+            content="""apiVersion: v1
+kind: Pod
+metadata:
+  name: app-with-sidecar
+  labels:
+    app: order-processor
+spec:
+  restartPolicy: Always
+  volumes:
+  - name: shared-logs
+    emptyDir: {}
+  containers:
+  - name: app
+    image: busybox:1.36
+    command: ["sh", "-c", "while true; do echo $(date) 'Order processed' >> /var/log/app.log; sleep 2; done"]
+    volumeMounts:
+    - name: shared-logs
+      mountPath: /var/log
+  - name: log-shipper-sidecar
+    image: busybox:1.36
+    command: ["sh", "-c", "tail -n+1 -F /var/log/app.log"]
+    volumeMounts:
+    - name: shared-logs
+      mountPath: /var/log
+""",
+            description="Canonical multi-container Pod with shared emptyDir volume (Sidecar logging pattern).",
+        ),
+        K8sManifest(
+            kind="Pod",
+            api_version="v1",
+            name="pod-with-config-and-secret",
+            source_file="content/en/examples/pods/pod-configmap-secret.yaml",
+            url="https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/",
+            content="""apiVersion: v1
+kind: Pod
+metadata:
+  name: secured-app-pod
+spec:
+  containers:
+  - name: backend
+    image: python:3.11-slim
+    env:
+    - name: APP_MODE
+      valueFrom:
+        configMapKeyRef:
+          name: app-config
+          key: mode
+    - name: DATABASE_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: db-credentials
+          key: password
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "150m"
+      limits:
+        memory: "256Mi"
+        cpu: "500m"
+""",
+            description="Canonical Pod demonstrating ConfigMap and Secret injection via valueFrom.",
+        ),
+        K8sManifest(
+            kind="Service",
+            api_version="v1",
+            name="web-service",
+            source_file="content/en/examples/service/web-service.yaml",
+            url="https://kubernetes.io/docs/concepts/services-networking/service/#defining-a-service",
+            content="""apiVersion: v1
+kind: Service
+metadata:
+  name: web-service
+spec:
+  type: ClusterIP
+  selector:
+    app: web
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+""",
+            description="Canonical ClusterIP Service routing traffic to pods with label app: web.",
         ),
     ]

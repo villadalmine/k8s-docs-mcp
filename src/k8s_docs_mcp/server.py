@@ -69,18 +69,19 @@ def search_k8s_docs(query: str, limit: int = 3) -> str:
 
 
 @mcp.tool()
-def get_canonical_manifest(kind: str) -> str:
+def get_canonical_manifest(kind: str, limit: int = 3) -> str:
     """Retrieves verified, unaltered Kubernetes YAML manifests directly from official kubernetes.io examples.
 
     Bypasses LLM generative alterations to prevent indentation errors, invalid fields, or deprecated apiVersions.
 
     Args:
-        kind: The Kubernetes resource kind (e.g. 'NetworkPolicy', 'Deployment', 'ValidatingAdmissionPolicy', 'ValidatingWebhookConfiguration').
+        kind: The Kubernetes resource kind (e.g. 'Pod', 'Service', 'Deployment', 'NetworkPolicy', 'ValidatingAdmissionPolicy').
+        limit: Maximum number of canonical manifest examples to return (default: 3).
 
     Returns:
         Exact canonical YAML manifests with source file provenance.
     """
-    manifests = store.get_manifests_by_kind(kind, limit=2)
+    manifests = store.get_manifests_by_kind(kind, limit=limit)
     if not manifests:
         all_kinds = ", ".join(store.list_kinds()[:15])
         return (
